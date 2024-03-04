@@ -1,0 +1,66 @@
+version: '3'
+
+
+
+services:
+  minio:
+    image: minio/minio:latest
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=ste
+      - MINIO_ROOT_PASSWORD=steflois
+    volumes:
+      - minio_storage:/data
+    command: server --console-address ":9001" /data
+    networks:
+      - minio_net
+
+  converter:
+    image: converter
+    build: 
+      context: /services/converter
+    container_name: converter
+    networks:
+      - minio_net
+
+  gan:
+    image: gan
+    build: 
+      context: /services/GAN
+    container_name: gan
+    networks:
+      - minio_net
+
+  analisi:
+    image: analisi
+    build: 
+      context: /services/Analisi
+    container_name: analisi
+    networks:
+      - minio_net
+
+  interfaccia:
+    image: interfaccia
+    build: 
+      context: /services/interfaccia
+    container_name: interfaccia
+    environment:
+      - HOST_VOLUME_PATH=./data
+    volumes:
+      - ${HOST_VOLUME_PATH:-./data}:/datashare
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - minio
+    networks:
+      - minio_net
+    env_file:
+      - ./cartella_dati.env
+
+networks:
+  minio_net:
+    
+
+volumes:
+  minio_storage: {}
